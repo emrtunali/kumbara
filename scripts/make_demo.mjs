@@ -64,6 +64,10 @@ for (let i = 0; i < days; i++) {
   if (rand() < 0.02) add(d, "KUAFOR SALON ELIF", between(450, 1200) * infl(k));
   if (rand() < 0.015) add(d, "YILDIZ PETROL LTD", between(1400, 2400) * infl(k));
 }
+// a free trial that turned into a subscription in August, and a card terminal that charged twice
+for (const m of [9, 10, 11]) add(Date.UTC(2025, 10 + m, 11), "DISNEY PLUS ISTANBUL", 249.9);
+add(Date.UTC(2026, 4, 9), "IKEA UMRANIYE", 4380);
+add(Date.UTC(2026, 4, 10), "IKEA UMRANIYE", 4380);
 // one-offs
 add(Date.UTC(2026, 1, 14), "TEKNOSA ATASEHIR MAGAZA", 38499);
 add(Date.UTC(2026, 6, 3), "PEGASUS HAVA YOLLARI", 6840);

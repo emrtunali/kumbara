@@ -281,6 +281,32 @@ select option { background: var(--surface); color: var(--ink); }
 .qfoot select { width: auto; flex: 1; min-width: 150px; }
 .done { display: grid; place-items: center; text-align: center; min-height: 240px; color: var(--ink-2); }
 
+/* savings planner */
+.planner { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 32px; }
+.plan-left { display: grid; gap: 16px; align-content: start; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: 13.5px; color: var(--ink-2); cursor: pointer; }
+.check input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--mint); flex: none; }
+.plan-result { margin-top: 6px; display: grid; gap: 14px; }
+.race { display: grid; gap: 10px; }
+.lane { display: grid; grid-template-columns: 92px 1fr 70px; gap: 10px; align-items: center; font-size: 13px; color: var(--ink-2); }
+.lane .track { height: 10px; border-radius: 999px; background: var(--grid); overflow: hidden; }
+.lane .track span { display: block; height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.lane .v { text-align: right; color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 600; }
+.plan-head { font: 650 clamp(20px, 2vw, 26px)/1.25 var(--display); letter-spacing: -0.02em; }
+.plan-head b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cuts { display: grid; gap: 12px; }
+.cut { display: grid; grid-template-columns: 120px 1fr 92px; gap: 12px; align-items: center; font-size: 13px; }
+.cut .name { display: flex; align-items: center; gap: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cut .name i { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.cut .freed { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.cut .freed b { color: var(--good); font-weight: 600; }
+.cancel { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+.toggle { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--stroke); background: var(--glass); font-size: 13px; cursor: pointer; color: var(--ink-2); transition: all 0.2s; }
+.toggle.on { border-color: color-mix(in oklab, var(--good) 45%, transparent); background: color-mix(in oklab, var(--good) 12%, transparent); color: var(--ink); text-decoration: line-through; text-decoration-color: color-mix(in oklab, var(--ink) 50%, transparent); }
+.toggle b { font-weight: 600; font-variant-numeric: tabular-nums; text-decoration: none; }
+@media (max-width: 960px) { .planner { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .cut { grid-template-columns: 92px 1fr 80px; } .lane { grid-template-columns: 76px 1fr 62px; } }
+
 /* subscriptions */
 .subs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(210px, 100%), 1fr)); gap: 12px; }
 .sub-card { padding: 16px; border-radius: 18px; background: var(--glass); border: 1px solid var(--stroke); display: grid; gap: 4px; }

@@ -5,13 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kumbara</title>
   <meta name="description" content="Banka ekstreni yükle: harcamaların, abonelikler, kişisel enflasyonun ve gelecek ay tahmini. Kategorileri cihazında öğrenen bir model. Kirada mı kalmalı, ev mi almalı? Türkiye verisiyle binlerce senaryo. Verin cihazından çıkmaz.">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://cdnjs.cloudflare.com; worker-src blob:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://cdnjs.cloudflare.com; worker-src 'self' blob:; manifest-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#05060a">
   <meta name="color-scheme" content="dark light">
   <meta property="og:title" content="Kumbara · paranın hikâyesi">
   <meta property="og:description" content="Ekstre analizi, kişisel enflasyon, cihazda öğrenen kategori modeli ve kirala mı, satın al mı simülatörü. Verin cihazından çıkmaz.">
   <meta property="og:image" content="https://raw.githubusercontent.com/emrtunali/kumbara/main/docs/giris.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Kumbara">
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%235ee7c5'/><stop offset='.5' stop-color='%236aa8ff'/><stop offset='1' stop-color='%23b48cff'/></linearGradient></defs><circle cx='16' cy='16' r='13' fill='url(%23g)'/></svg>">
 </head>
@@ -142,6 +147,26 @@
             <div class="srclegend" id="srclegend"></div>
           </div>
           <div class="stack" id="stack" style="margin-top:18px"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- savings planner -->
+    <section class="block reveal" id="plan">
+      <div class="head"><div><p class="eyebrow">Plan</p><h2>Hedefine ne kadar uzaksın?</h2></div><p class="note" id="plan-note"></p></div>
+      <div class="glass planner">
+        <div class="plan-left">
+          <label class="ctl">Hedef<div class="money"><input id="goal" inputmode="numeric" value="300.000"><span>TL</span></div></label>
+          <label class="ctl"><span class="row">Şu süre içinde <output id="o-months"></output></span><input id="months" type="range" min="3" max="60" step="1" value="12"></label>
+          <label class="check"><input type="checkbox" id="deposit" checked><span>Birikimi TL mevduatta tut <span class="note" id="dep-rate"></span></span></label>
+          <label class="check"><input type="checkbox" id="real" checked><span>Hedef enflasyonla büyüsün <span class="note" id="inf-rate"></span></span></label>
+          <div class="plan-result" id="plan-result"></div>
+        </div>
+        <div class="plan-right">
+          <h3>Nereden kısabilirsin?</h3>
+          <p class="note" style="margin:0 0 12px">Kaydırıcılar aylık harcamanın ne kadarını azaltacağını gösterir. Abonelikleri iptal etmeyi de dene.</p>
+          <div class="cuts" id="cuts"></div>
+          <div class="cancel" id="cancel"></div>
         </div>
       </div>
     </section>

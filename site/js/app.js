@@ -7,7 +7,8 @@ import { byId, CATEGORIES, OTHER } from "./categorize.js";
 import { countUp, fmt, rangeSVG, redrawAll, ring, sankey, short, sparkline, stackedBars, TL } from "./charts.js";
 import { forecast, lastMonthPartial, monthEnd, personalInflation, recentMonthlyInflation } from "./insight.js";
 import { classify, reviewQueue, train } from "./learn.js";
-import { detectColumns, fromTextLines, merge, parseCSV, toTransactions } from "./parse.js";
+import { detectColumns, fromTextLines, merge, parseAmount, parseCSV, toTransactions } from "./parse.js";
+import { duplicates, FLEXIBLE, monthlyByCat, monthsToGoal, newRecurring, plan } from "./plan.js";
 import * as sim from "./sim.js";
 
 const $ = (s) => document.querySelector(s);
@@ -241,6 +242,9 @@ function render() {
   if (rises.length) ins.push(["warn", ICON.trend, `${rises.slice(0, 3).map((x) => `<b>${esc(x.name)}</b> ${pct(x.rise)}`).join(", ")} zamlandı. Abonelik ve üyeliklerin yılda <b>${TL(subsYear)}</b>.`]);
   for (const l of leaks(txs).slice(0, 2)) ins.push(["warn", ICON.alert, `<b>${esc(cap(l.merchant))}</b> ayda ${fmt(l.count / s.months, 1)} kez, ${TL(l.perMonth)}. Bu tempoda yılda <b>${TL(l.yearly)}</b>.`]);
   if (pi && Math.abs(pi.gap) > 0.005) ins.push(["", ICON.spark, `Senin sepetinin yıllık enflasyonu <b>${pct(pi.personal, 1)}</b>, resmî rakamın ${pct(pi.gap, 1)} ${pi.gap > 0 ? "üstünde" : "altında"}. En çok <b>${byId[pi.rows[0].cat]?.name.toLocaleLowerCase("tr")}</b> etkiliyor.`]);
+  const dmyLong = (d) => new Date(d).toLocaleDateString("tr-TR", { day: "numeric", month: "long" });
+  for (const d of duplicates(txs).slice(0, 2)) ins.unshift(["warn", ICON.alert, `<b>${esc(cap(d.first.merchant))}</b> ${dmyLong(d.first.date)} ve ${dmyLong(d.second.date)} tarihlerinde iki kez <b>${TL(d.amount)}</b> çekmiş. Çift çekim olabilir; bankana sor.`]);
+  for (const n of newRecurring(txs).slice(0, 2)) ins.unshift(["warn", ICON.trend, `<b>${esc(cap(n.merchant))}</b> ${ymLong(n.since.slice(0, 7))} itibarıyla her ay <b>${TL(n.amount)}</b> çekiyor. Yeni bir abonelik ya da süresi bitmiş bir deneme olabilir.`]);
   const q = reviewQueue(txs, skipped);
   if (q.length) ins.push(["", ICON.spark, `Model <b>${q.length}</b> yeri tam tanıyamadı. Aşağıda birkaç soruya cevap verirsen kategoriler netleşir.`]);
   $("#insights").innerHTML = ins.map(([c, ic, h]) => `<div class="insight ${c}"><span class="ic">${ic}</span><span>${h}</span></div>`).join("");
@@ -290,6 +294,7 @@ function render() {
   if (me) $("#month-end").innerHTML = `<b>${ymLong(me.month)}</b> henüz bitmedi (son işlem: ayın ${me.day}. günü). Şu ana kadar ${TL(me.soFar)}; bu gidişle ay <b>${TL(me.mid)}</b> civarında kapanır (${short(me.lo)} – ${short(me.hi)} TL).`;
 
   renderModel();
+  setupPlan(s, subs);
 
   // ---- subscriptions
   const regular = subs.filter((x) => x.kind === "subscription");
@@ -347,6 +352,73 @@ function forecastStrip(m, f, partial) {
 
 const nextMonth = (k) => { const [y, mo] = k.split("-").map(Number); return mo === 12 ? `${y + 1}-01` : `${y}-${String(mo + 1).padStart(2, "0")}`; };
 const cpiRows = () => hicp.months.map((mm, i) => ({ month: mm, cpi: hicp.index.all[i] }));
+
+// ------------------------------------------------------------------ savings planner
+const planState = { cuts: store.get("kumbara-cuts", {}), cancelled: new Set(), base: null, byCat: {}, subs: [], colors: {} };
+
+function setupPlan(s, subs) {
+  const cats = categoryTotals(txs);
+  planState.colors = colorsFor(cats);
+  planState.base = { income: s.perMonthIncome, spend: s.perMonth };
+  planState.byCat = monthlyByCat(txs, s.months);
+  planState.subs = subs.filter((x) => x.kind === "subscription");
+  const flex = cats.filter((c) => FLEXIBLE.includes(c.id)).slice(0, 6);
+  $("#cuts").innerHTML = flex.map((c) => {
+    const k = planState.cuts[c.id] || 0;
+    return `<label class="cut"><span class="name"><i style="background:var(${planState.colors[c.id]})"></i>${c.name}</span>
+      <input type="range" min="0" max="0.6" step="0.05" value="${k}" data-cat="${c.id}" aria-label="${c.name} için azaltma">
+      <span class="freed" data-for="${c.id}"></span></label>`;
+  }).join("");
+  $("#cancel").innerHTML = planState.subs.length ? planState.subs.map((x) => `<button type="button" class="toggle ${planState.cancelled.has(x.merchant) ? "on" : ""}" data-m="${esc(x.merchant)}" aria-pressed="${planState.cancelled.has(x.merchant)}">${esc(x.name)} <b>${TL(x.last)}</b></button>`).join("") : "";
+  $("#cuts").querySelectorAll("input").forEach((r) => r.addEventListener("input", () => { planState.cuts[r.dataset.cat] = +r.value; store.set("kumbara-cuts", planState.cuts); updatePlan(); }));
+  $("#cancel").querySelectorAll(".toggle").forEach((b) => b.addEventListener("click", () => {
+    const m = b.dataset.m;
+    planState.cancelled.has(m) ? planState.cancelled.delete(m) : planState.cancelled.add(m);
+    b.classList.toggle("on"); b.setAttribute("aria-pressed", planState.cancelled.has(m));
+    updatePlan();
+  }));
+  // a reasonable first goal: three months of spending
+  if (!$("#goal").dataset.touched) $("#goal").value = fmt(Math.round((s.perMonth * 3) / 10_000) * 10_000);
+  updatePlan();
+}
+
+function updatePlan() {
+  if (!planState.base) return;
+  const goal = parseAmount($("#goal").value) || 0;
+  const months = +$("#months").value;
+  $("#o-months").textContent = months >= 24 ? `${fmt(months / 12, months % 12 ? 1 : 0)} yıl` : `${months} ay`;
+  $("#months").style.setProperty("--p", `${((months - 3) / 57) * 100}%`);
+  const last = macro ? macro[macro.length - 1] : null;
+  const rate = $("#deposit").checked && last ? (last.rate / 100) * 0.85 / 12 : 0; // after 15 % withholding
+  const inflation = $("#real").checked && hicp ? recentMonthlyInflation(cpiRows()) : 0;
+  $("#dep-rate").textContent = last ? `(aylık %${fmt((last.rate / 100) * 0.85 / 12 * 100, 1)} net)` : "";
+  $("#inf-rate").textContent = hicp ? `(aylık %${fmt(recentMonthlyInflation(cpiRows()) * 100, 1)})` : "";
+  const cancelled = planState.subs.filter((x) => planState.cancelled.has(x.merchant)).map((x) => ({ monthly: x.last }));
+  const p = plan(planState.base, planState.byCat, planState.cuts, cancelled);
+  for (const el of document.querySelectorAll("#cuts .freed")) {
+    const c = el.dataset.for, k = planState.cuts[c] || 0;
+    el.innerHTML = k ? `<b>+${short((planState.byCat[c] || 0) * k)}</b>/ay` : `${short(planState.byCat[c] || 0)}/ay`;
+    const r = document.querySelector(`#cuts input[data-cat="${c}"]`);
+    r.style.setProperty("--p", `${(k / 0.6) * 100}%`);
+  }
+  const opts = { rate, inflation };
+  const tNow = monthsToGoal(goal, p.now, opts), tPlan = monthsToGoal(goal, p.after, opts);
+  // what a month would need to hit the deadline (searching, since interest and inflation both apply)
+  let need = 0;
+  for (let lo = 0, hi = goal; hi - lo > 50;) { const mid = (lo + hi) / 2; monthsToGoal(goal, mid, opts) <= months ? (hi = mid) : (lo = mid); need = hi; }
+  const when = (t) => (Number.isFinite(t) ? (t >= 24 ? `${fmt(t / 12, 1)} yıl` : `${t} ay`) : "ulaşılamıyor");
+  const maxT = Math.max(...[tNow, tPlan, months].filter(Number.isFinite), 1);
+  const lane = (label, t, color) => `<div class="lane"><span>${label}</span><span class="track"><span style="width:${Number.isFinite(t) ? Math.max(4, (t / maxT) * 100) : 100}%;background:var(${Number.isFinite(t) ? color : "--up"})"></span></span><span class="v">${when(t)}</span></div>`;
+  const changed = p.freed > 0;
+  $("#plan-result").innerHTML = `
+    <div class="plan-head">${changed ? `Planla hedefe <b>${when(tPlan)}</b> içinde ulaşırsın.` : Number.isFinite(tNow) ? `Bu tempoyla hedefe <b>${when(tNow)}</b> içinde ulaşırsın.` : `Şu an ayda birikim yok; kaydırıcılarla bir plan kur.`}</div>
+    <div class="race">${lane("Bu tempoyla", tNow, "--ink-2")}${changed ? lane("Planla", tPlan, "--mint") : ""}${lane("Hedef süre", months, "--blue")}</div>
+    <div class="note">${months} ayda yetişmesi için ayda <b style="color:var(--ink)">${TL(need)}</b> biriktirmek gerekiyor; şu an ${TL(Math.max(0, p.now))}${changed ? `, planla ${TL(p.after)} (ayda +${TL(p.freed)}, yılda +${TL(p.yearly)})` : ""}.</div>`;
+  $("#plan-note").textContent = planState.base.income > 0 ? `Gelir ${TL(planState.base.income)} · harcama ${TL(planState.base.spend)} / ay` : "Ekstrede gelir yok: birikim sıfır kabul edildi";
+}
+["#goal", "#months", "#deposit", "#real"].forEach((id) => $(id).addEventListener("input", (e) => { if (id === "#goal") e.target.dataset.touched = "1"; updatePlan(); }));
+$("#deposit").addEventListener("change", updatePlan);
+$("#real").addEventListener("change", updatePlan);
 
 // ------------------------------------------------------------------ the learning model, in view
 const SRC = { rule: ["Bilinen marka", "--ink-2"], model: ["Model öğrendi", "--violet"], you: ["Senin cevabın", "--mint"], unsure: ["Emin değil", "--warn"] };
@@ -445,5 +517,7 @@ $("#pick").addEventListener("click", (e) => { e.stopPropagation(); input.click()
   sim.init(macro);
   showTab();
   if (new URLSearchParams(location.search).has("ornek")) $("#demo").click();
+  // works offline and installs like an app; statements are never part of the cache
+  if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
 })();
 

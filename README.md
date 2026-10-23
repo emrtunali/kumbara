@@ -46,6 +46,8 @@ Model emin olmadığında tahmin etmiyor, soruyor. Sorduğunda da doğru cevap n
 
 ## Neler var
 
+- **Tasarruf planlayıcı:** bir hedef ve süre koyuyorsun. Kategori kaydırıcılarıyla ("paket servisi %40 azalt") ve abonelik iptalleriyle hedefe kaç ayda ulaşacağını anında görüyorsun. Birikimin mevduatta faiz kazanması ve hedefin enflasyonla büyümesi de hesapta.
+- **Uyarılar:** aynı yere birkaç gün arayla aynı tutarın iki kez çekilmesi (çift çekim) ve son aylarda sessizce başlayan düzenli ödemeler (unutulmuş deneme süreleri).
 - **Para akışı:** gelirin kategorilere ve birikime nasıl dağıldığını gösteren akış (Sankey) diyagramı.
 - **Kategoriler:** halka grafik ve liste. Bir kategoriye dokununca işlemler süzülüyor.
 - **Abonelik ve zam dedektörü:** her ay benzer tutarda çekilen ödemeleri yıllık maliyetiyle gösteriyor, zamları işaretliyor.
@@ -60,6 +62,7 @@ Model emin olmadığında tahmin etmiyor, soruyor. Sorduğunda da doğru cevap n
   - Windows-1254 kodlu dosyaları okuyor.
 - **Birden fazla ay:** dosyaları birlikte yükleyebilirsin. Çakışan günler iki kez sayılmıyor, aynı gün iki kahve ise iki kahve olarak kalıyor.
 - **Klavye:** `⌘K` işlemlerde arama, soru kartında `1` `2` `3` ile cevap, `S` ile geç.
+- **Uygulama gibi:** telefona ya da bilgisayara uygulama olarak eklenebiliyor ve internet yokken de açılıyor. Ekstreler önbelleğe hiç girmiyor.
 
 ![Gelirin kategorilere akışı](docs/akis.png)
 
@@ -109,7 +112,7 @@ Veriler [FRED](https://fred.stlouisfed.org) üzerinden, anahtarsız çekiliyor (
 ## Geliştirme
 
 ```bash
-npm test          # 22 test, Node'un kendi test aracı, bağımlılık yok
+npm test          # 27 test, Node'un kendi test aracı, bağımlılık yok
 npm run serve     # http://localhost:8792
 npm run data      # makro veriyi yenile
 npm run demo      # örnek ekstreleri yeniden üret
@@ -123,10 +126,12 @@ site/js/
   categorize.js   marka kuralları
   learn.js        cihazda eğitilen naive Bayes sınıflandırıcı, soru sırası
   insight.js      kişisel enflasyon, gelecek ay ve ay sonu tahmini
+  plan.js         tasarruf planlayıcı, çift çekim ve yeni abonelik uyarıları
   analysis.js     aylık kırılım, abonelikler, sızıntılar
   simulate.js     kirala mı al mı Monte Carlo
   charts.js       bağımlılıksız SVG grafikler (akış, halka, bantlar)
   app.js, sim.js  arayüz
+site/sw.js        çevrimdışı çalışma (ekstreler önbelleğe girmez)
 ```
 
 ## English
@@ -137,7 +142,9 @@ site/js/
 - **Categories:** a naive Bayes classifier is trained in the browser on word and character n-gram features, so it can categorise local merchants that brand rules miss. On 121 held-out merchant lines it raises accuracy from 14 % (rules alone) to 79 %, with 97 % precision where it commits. When it is unsure, it asks, and it retrains on every answer.
 - **Personal inflation:** weights Eurostat's category price indices for Türkiye by your own spending shares.
 - **Forecast:** next month's spending, with ranges.
+- **Planner and alerts:** a savings goal with category cuts and cancellable subscriptions; double charges and quietly started subscriptions are flagged.
 - **Rent or buy:** a Monte Carlo comparison, block-bootstrapped from Turkish macro history.
+- **Installable and offline:** works as an app without a connection; statements are never cached.
 
 Nothing leaves your device. MIT licensed.
 
