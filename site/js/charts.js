@@ -12,9 +12,9 @@ export const TL = (v) => fmt(v) + " TL";
 /** 1.234.567 -> "1,2 mn" for axes */
 export const short = (v) => {
   const a = Math.abs(v);
-  if (a >= 1e9) return fmt(v / 1e9, 1) + " mr";
-  if (a >= 1e6) return fmt(v / 1e6, a >= 1e7 ? 0 : 1) + " mn";
-  if (a >= 1e3) return fmt(v / 1e3, a >= 1e4 ? 0 : 1) + " b";
+  if (a >= 1e9) return fmt(v / 1e9, 1) + " milyar";
+  if (a >= 1e6) return fmt(v / 1e6, a >= 1e7 ? 0 : 1) + " milyon";
+  if (a >= 1e3) return fmt(v / 1e3, a >= 1e4 ? 0 : 1) + " bin";
   return fmt(v);
 };
 
@@ -152,6 +152,144 @@ export function stackedBars(host, o) {
       hit.addEventListener("pointerleave", () => (tip.style.display = "none"));
     }
   });
+}
+
+const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Count a number up to its value (respects reduced motion). */
+export function countUp(node, value, format = (v) => fmt(v)) {
+  if (reduced() || !isFinite(value)) { node.textContent = format(value); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+    node.textContent = format(value * e);
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/** Tiny trend line with a soft fill. */
+export function sparkline(values, color = "--blue") {
+  const W = 200, H = 34, n = values.length;
+  if (n < 2) return "";
+  const lo = Math.min(...values), hi = Math.max(...values), span = hi - lo || 1;
+  const pts = values.map((v, i) => [(i / (n - 1)) * W, H - 3 - ((v - lo) / span) * (H - 6)]);
+  const d = "M" + pts.map((p) => p.map((x) => x.toFixed(1)).join(",")).join("L");
+  const id = "sg" + Math.random().toString(36).slice(2, 8);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="var(${color})" stop-opacity=".35"/><stop offset="1" stop-color="var(${color})" stop-opacity="0"/></linearGradient></defs>
+    <path d="${d}L${W},${H}L0,${H}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="var(${color})" stroke-width="1.8" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${pts[n - 1][0]}" cy="${pts[n - 1][1]}" r="2.6" fill="var(${color})"/></svg>`;
+}
+
+/**
+ * Money flow: one source on the left (income) splitting into targets on the right (categories,
+ * savings). Band widths are proportional to amounts; hover a band for its numbers.
+ */
+export function sankey(host, o) {
+  mount(host, () => {
+    host.innerHTML = "";
+    const W = host.clientWidth || 800, narrow = W < 560;
+    const targets = o.targets.filter((t) => t.value > 0);
+    const total = targets.reduce((s, t) => s + t.value, 0);
+    const gap = narrow ? 5 : 8, labelW = narrow ? 118 : Math.min(230, W * 0.28);
+    const H = Math.max(narrow ? 320 : 360, targets.length * (narrow ? 34 : 38));
+    const svg = el("svg", { viewBox: `0 0 ${W} ${H}`, height: H, role: "img", "aria-label": o.aria || "" }, host);
+    const defs = el("defs", {}, svg);
+    const avail = H - gap * (targets.length - 1);
+    const scale = avail / total;
+    const xL = narrow ? 0 : 120, nodeW = 12, xR = W - labelW - nodeW;
+    // left node
+    const srcH = total * scale;
+    el("rect", { x: xL, y: 0, width: nodeW, height: srcH, rx: 4, style: "fill:var(--ink);opacity:.9" }, svg);
+    if (!narrow) {
+      el("text", { x: xL - 12, y: srcH / 2 - 4, "text-anchor": "end", style: "fill:var(--ink);font-size:14px;font-weight:600" }, svg).textContent = o.source.label;
+      el("text", { x: xL - 12, y: srcH / 2 + 14, "text-anchor": "end" }, svg).textContent = short(o.source.value) + " TL";
+    }
+    const tip = tipBox(host);
+    // label positions: centred on their node, but never closer than one line to the previous one
+    const lineH = narrow ? 17 : 19;
+    let yy = 0;
+    const labelY = targets.map((t) => { const h = t.value * scale, c = yy + h / 2; yy += h + gap; return c; });
+    for (let i = 1; i < labelY.length; i++) labelY[i] = Math.max(labelY[i], labelY[i - 1] + lineH + (targets[i - 1].value * scale > 26 ? 14 : 0));
+    let yL = 0, yR = 0;
+    targets.forEach((t, i) => {
+      const h = t.value * scale;
+      const gid = `fl${i}`;
+      const lg = el("linearGradient", { id: gid, x1: "0", x2: "1" }, defs);
+      el("stop", { offset: "0", "stop-color": "var(--ink)", "stop-opacity": ".10" }, lg);
+      el("stop", { offset: "1", "stop-color": `var(${t.color})`, "stop-opacity": ".55" }, lg);
+      const x0 = xL + nodeW, x1 = xR, c = (x1 - x0) * 0.5;
+      const d = `M${x0},${yL} C${x0 + c},${yL} ${x1 - c},${yR} ${x1},${yR} L${x1},${yR + h} C${x1 - c},${yR + h} ${x0 + c},${yL + h} ${x0},${yL + h} Z`;
+      const band = el("path", { d, fill: `url(#${gid})`, style: `opacity:0;transition:opacity .6s ${0.05 * i}s, filter .2s` }, svg);
+      requestAnimationFrame(() => (band.style.opacity = 1));
+      el("rect", { x: xR, y: yR, width: nodeW, height: Math.max(2, h), rx: 3, style: `fill:var(${t.color})` }, svg);
+      const ty = labelY[i];
+      el("text", { x: xR + nodeW + 10, y: ty - (h > 26 ? 3 : -4), style: "fill:var(--ink);font-size:13px;font-weight:550" }, svg).textContent = t.label;
+      if (h > 26) el("text", { x: xR + nodeW + 10, y: ty + 13 }, svg).textContent = `${short(t.value)} TL · %${fmt((t.value / total) * 100)}`;
+      band.addEventListener("pointermove", (ev) => {
+        const r = svg.getBoundingClientRect();
+        band.style.filter = "brightness(1.35)";
+        showTip(host, tip, ev.clientX - r.left, ev.clientY - r.top, t.label, [{ label: o.unit || "Aylık", value: TL(t.value), color: t.color }, { label: "Pay", value: `%${fmt((t.value / total) * 100, 1)}` }]);
+      });
+      band.addEventListener("pointerleave", () => { band.style.filter = ""; tip.style.display = "none"; });
+      yL += h; yR += h + gap;
+    });
+  });
+}
+
+/** Donut of shares with a hover readout in the middle. items: [{label, value, color}] */
+export function ring(host, o) {
+  mount(host, () => {
+    host.innerHTML = "";
+    const S = Math.min(230, host.clientWidth || 230), r = S / 2 - 14, th = 20, cx = S / 2, cy = S / 2;
+    const svg = el("svg", { viewBox: `0 0 ${S} ${S}`, width: S, height: S, role: "img", "aria-label": o.aria || "" }, host);
+    const total = o.items.reduce((s, x) => s + x.value, 0);
+    const C = 2 * Math.PI * r;
+    el("circle", { cx, cy, r, fill: "none", style: "stroke:var(--grid)", "stroke-width": th }, svg);
+    const label = el("text", { x: cx, y: cy - 4, "text-anchor": "middle", style: "fill:var(--ink);font-size:22px;font-weight:700;letter-spacing:-.02em" }, svg);
+    const sub = el("text", { x: cx, y: cy + 16, "text-anchor": "middle", style: "fill:var(--muted);font-size:11.5px" }, svg);
+    const reset = () => { label.textContent = short(o.total ?? total); sub.textContent = o.caption || "toplam"; };
+    reset();
+    let acc = 0;
+    o.items.forEach((x, i) => {
+      const len = (x.value / total) * C;
+      const seg = el("circle", {
+        cx, cy, r, fill: "none", "stroke-width": th, "stroke-linecap": "butt",
+        "stroke-dasharray": `${Math.max(0, len - 2.5)} ${C}`, "stroke-dashoffset": -acc,
+        transform: `rotate(-90 ${cx} ${cy})`, style: `stroke:var(${x.color});transition:stroke-width .2s, opacity .3s;opacity:0`,
+      }, svg);
+      setTimeout(() => (seg.style.opacity = 1), reduced() ? 0 : 40 * i);
+      seg.addEventListener("pointerenter", () => { seg.setAttribute("stroke-width", th + 6); label.textContent = `%${fmt((x.value / total) * 100)}`; sub.textContent = x.label; o.onHover?.(x); });
+      seg.addEventListener("pointerleave", () => { seg.setAttribute("stroke-width", th); reset(); o.onHover?.(null); });
+      seg.addEventListener("click", () => o.onClick?.(x));
+      acc += len;
+    });
+  });
+}
+
+/** A low–high range with a dot at the middle value, on a shared scale. */
+export function rangeSVG(lo, mid, hi, max, color = "--blue") {
+  const W = 300, X = (v) => 4 + (Math.max(0, v) / max) * (W - 8);
+  return `<svg viewBox="0 0 ${W} 16" preserveAspectRatio="none" aria-hidden="true">
+    <line x1="4" x2="${W - 4}" y1="8" y2="8" stroke="var(--grid)" stroke-width="2" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <line x1="${X(lo)}" x2="${X(hi)}" y1="8" y2="8" stroke="var(${color})" stroke-opacity=".45" stroke-width="8" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+    <circle cx="${X(mid)}" cy="8" r="5" fill="var(${color})" stroke="var(--surface)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+
+/** Probability as a ring that fills; the number sits in the middle. */
+export function gauge(p, label) {
+  const S = 180, r = 74, C = 2 * Math.PI * r, id = "gg" + Math.random().toString(36).slice(2, 7);
+  return `<svg viewBox="0 0 ${S} ${S}" width="${S}" height="${S}" role="img" aria-label="${label}: %${fmt(p * 100)}">
+    <defs><linearGradient id="${id}" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="var(--mint)"/><stop offset=".5" stop-color="var(--blue)"/><stop offset="1" stop-color="var(--violet)"/></linearGradient></defs>
+    <circle cx="90" cy="90" r="${r}" fill="none" stroke="var(--grid)" stroke-width="12"/>
+    <circle cx="90" cy="90" r="${r}" fill="none" stroke="url(#${id})" stroke-width="12" stroke-linecap="round" transform="rotate(-90 90 90)"
+      stroke-dasharray="${C}" stroke-dashoffset="${C}" style="transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)" data-target="${C * (1 - p)}"/>
+    <text x="90" y="92" text-anchor="middle" style="fill:var(--ink);font:700 38px var(--display);letter-spacing:-.04em">%${fmt(p * 100)}</text>
+    <text x="90" y="116" text-anchor="middle" style="fill:var(--muted);font-size:12px">${label}</text></svg>`;
+}
+/** Start gauge animations inside a container (after it is in the DOM). */
+export function animateGauges(root) {
+  root.querySelectorAll("[data-target]").forEach((c) => requestAnimationFrame(() => requestAnimationFrame(() => c.setAttribute("stroke-dashoffset", c.dataset.target))));
 }
 
 /** Histogram of values with a marker at zero; bars left of zero and right of zero get two colors. */

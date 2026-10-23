@@ -2,197 +2,269 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Kumbara</title>
-  <meta name="description" content="Banka ekstreni yükle, harcamalarını, aboneliklerini ve enflasyona göre gerçek değişimi gör; kirada mı kalmalı, ev mi almalı, Türkiye'nin geçmiş verisiyle binlerce senaryoda hesapla. Verin cihazından çıkmaz.">
+  <meta name="description" content="Banka ekstreni yükle: harcamaların, abonelikler, kişisel enflasyonun ve gelecek ay tahmini. Kategorileri cihazında öğrenen bir model. Kirada mı kalmalı, ev mi almalı? Türkiye verisiyle binlerce senaryo. Verin cihazından çıkmaz.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; connect-src 'self' https://cdnjs.cloudflare.com; worker-src blob:; img-src 'self' data:; style-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; form-action 'none'">
   <meta name="referrer" content="no-referrer">
-  <meta name="theme-color" content="#1baf7a">
-  <meta property="og:title" content="Kumbara · Paranı anla, kararını hesapla">
-  <meta property="og:description" content="Ekstre analizi ve kirala mı, satın al mı simülatörü. Tamamen tarayıcında çalışır, verin hiçbir yere gitmez.">
+  <meta name="theme-color" content="#05060a">
+  <meta name="color-scheme" content="dark light">
+  <meta property="og:title" content="Kumbara · paranın hikâyesi">
+  <meta property="og:description" content="Ekstre analizi, kişisel enflasyon, cihazda öğrenen kategori modeli ve kirala mı, satın al mı simülatörü. Verin cihazından çıkmaz.">
+  <meta property="og:image" content="https://raw.githubusercontent.com/emrtunali/kumbara/main/docs/giris.png">
   <link rel="stylesheet" href="style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='18' r='11' fill='%231baf7a'/><rect x='12' y='5' width='8' height='3' rx='1.5' fill='%231baf7a'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><defs><linearGradient id='g' x1='0' x2='1'><stop offset='0' stop-color='%235ee7c5'/><stop offset='.5' stop-color='%236aa8ff'/><stop offset='1' stop-color='%23b48cff'/></linearGradient></defs><circle cx='16' cy='16' r='13' fill='url(%23g)'/></svg>">
 </head>
 <body>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
 <header class="top"><div class="bar">
-  <div class="brand">Kumbara <span>· paranı anla, kararını hesapla</span></div>
-  <nav role="tablist">
-    <a href="#harcamalar" role="tab" data-tab="harcamalar">Harcamalarım</a>
-    <a href="#kirala-al" role="tab" data-tab="kirala-al">Kirala mı, al mı?</a>
-    <button class="theme" id="theme" type="button" aria-label="Açık ya da koyu tema">Tema</button>
+  <div class="brand"><span class="orb" aria-hidden="true"></span>Kumbara</div>
+  <nav class="pill" role="tablist" aria-label="Bölümler">
+    <span class="thumb" aria-hidden="true"></span>
+    <a href="#harcamalar" role="tab" data-tab="harcamalar">Harcamalar</a>
+    <a href="#kirala-al" role="tab" data-tab="kirala-al">Kirala · Al</a>
   </nav>
+  <div class="tools">
+    <span class="kbd kbd-hint" title="İşlemlerde ara" style="align-self:center">⌘K</span>
+    <button class="icon-btn" id="theme" type="button" aria-label="Açık ya da koyu görünüm">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></svg>
+    </button>
+  </div>
 </div></header>
 
 <main>
-  <!-- ======================================================= spending -->
-  <section id="harcamalar" class="tab" role="tabpanel">
-    <h1>Paran nereye gidiyor?</h1>
-    <p class="lede">Banka ya da kredi kartı ekstreni yükle: harcamalarını kategorilere ayırır, aboneliklerini ve zamlarını bulur, harcamanın enflasyondan arındırılmış gerçek değişimini gösterir.</p>
-
-    <div class="privacy"><b>🔒 Verin cihazından çıkmaz.</b> Dosya tarayıcında okunur; hiçbir sunucuya gönderilmez, kaydedilmez. Sayfayı kapatınca her şey silinir (yalnızca senin yaptığın kategori düzeltmeleri bu tarayıcıda hatırlanır).</div>
-
-    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Ekstre dosyası seç">
-      <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls,.pdf" multiple hidden>
-      <div class="drop-title">Ekstreni buraya sürükle ya da <u>dosya seç</u></div>
-      <div class="drop-sub">CSV, Excel (.xlsx, .xls) ya da PDF · birden fazla ay seçebilirsin</div>
+<!-- ===================================================================== spending -->
+<section id="harcamalar" class="tab" role="tabpanel">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">Kişisel finans · cihazında çalışır</p>
+      <h1>Paranın<br><span class="grad">hikâyesi.</span></h1>
+      <p class="lede">Ekstreni bırak. Nereye harcadığını, hangi aboneliğe zam geldiğini, senin sepetinin enflasyonunu ve gelecek ayı birkaç saniyede gör.</p>
+      <div class="privacy">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+        <span>Dosyan tarayıcında okunur, hiçbir sunucuya gitmez. Kategori modeli de burada, cihazında eğitilir.</span>
+      </div>
     </div>
-    <div class="row-actions">
-      <button type="button" class="btn ghost" id="demo">Örnek ekstreyle dene</button>
-      <span class="note" id="file-status"></span>
-    </div>
-
-    <details class="card mapping" id="mapping" hidden>
-      <summary>Sütunlar ve işaret <span class="note" id="mapping-note"></span></summary>
-      <div class="controls" id="mapping-controls"></div>
-    </details>
-
-    <div id="results" hidden>
-      <div class="kpis" id="kpis"></div>
-      <div class="insights" id="insights"></div>
-
-      <div class="grid2">
-        <div class="card">
-          <h2>Kategoriler</h2>
-          <p class="sub">Dönem toplamı. Bir kategoriye tıklayınca işlemler o kategoriye süzülür.</p>
-          <div id="c-cats"></div>
+    <div>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Ekstre dosyası seç">
+        <input type="file" id="file" accept=".csv,.txt,.xlsx,.xls,.pdf" multiple hidden>
+        <div class="glyph"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4m0 0-4 4m4-4 4 4"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg></div>
+        <div class="title">Ekstreni sürükle ya da seç</div>
+        <div class="formats">CSV · Excel · PDF — birden fazla ay olabilir</div>
+        <div class="actions">
+          <button type="button" class="btn" id="pick">Dosya seç</button>
+          <button type="button" class="btn ghost" id="demo">Örnekle dene</button>
         </div>
-        <div class="card">
-          <div class="cardhead">
-            <h2>Aylık harcama</h2>
-            <div class="seg" role="group" aria-label="Para birimi">
-              <button type="button" class="on" data-real="0">Nominal</button>
-              <button type="button" data-real="1">Bugünün parasıyla</button>
-            </div>
+      </div>
+      <div class="status" id="file-status" role="status" aria-live="polite"></div>
+      <details class="glass mapping" id="mapping" hidden>
+        <summary><span>Sütunlar</span><span class="note" id="mapping-note"></span></summary>
+        <div class="fields" id="mapping-controls"></div>
+      </details>
+    </div>
+  </div>
+
+  <div class="features" id="features">
+    <div class="feature glass reveal">
+      <span class="fi" style="--fc:var(--violet)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.2"/><circle cx="18" cy="6" r="2.2"/><circle cx="12" cy="18" r="2.2"/><circle cx="12" cy="11" r="1.6"/><path d="M7.7 7.4 10.7 10M16.3 7.4 13.3 10M12 12.6v3.2"/></svg></span>
+      <h3>Cihazında öğrenen model</h3>
+      <p>Migros'u herkes tanır. "Köfteci Yusuf"u tanımak için model harf örüntülerinden öğrenir, emin olmadığında sorar, her cevabınla yeniden eğitilir. Hiçbir şey sunucuya gitmez.</p>
+    </div>
+    <div class="feature glass reveal">
+      <span class="fi" style="--fc:var(--mint)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M6 16l4-5 3 3 5-7"/><circle cx="18" cy="7" r="1.4"/></svg></span>
+      <h3>Senin enflasyonun</h3>
+      <p>Resmî rakam herkesin ortalaması. Kira, market ve akaryakıt payına göre senin sepetinin yıllık enflasyonunu ve onu neyin sürüklediğini gösterir.</p>
+    </div>
+    <div class="feature glass reveal">
+      <span class="fi" style="--fc:var(--blue)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span>
+      <h3>Gelecek ay ve ay sonu</h3>
+      <p>Kategori kategori gelecek ayın tahmini, belirsizlik aralığıyla. Ay ortasındaysan bu gidişle ayı nerede kapatacağını söyler.</p>
+    </div>
+  </div>
+
+  <div id="results" hidden>
+    <!-- summary -->
+    <div class="summary reveal">
+      <div class="glass hero-num">
+        <div class="label" id="period"></div>
+        <div class="value"><span id="avg"></span><small>TL</small></div>
+        <div class="label">ortalama aylık harcama</div>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="tiles" id="tiles"></div>
+    </div>
+    <div class="insights reveal" id="insights"></div>
+
+    <!-- flow -->
+    <section class="block reveal">
+      <div class="head"><div><p class="eyebrow">Akış</p><h2>Gelirin nereye gidiyor</h2></div><p class="note" id="flow-note"></p></div>
+      <div class="glass"><div class="chart" id="c-flow"></div></div>
+    </section>
+
+    <!-- categories + personal inflation -->
+    <section class="block reveal">
+      <div class="grid g2">
+        <div class="glass">
+          <p class="eyebrow">Kategoriler</p>
+          <h2>Payların</h2>
+          <p class="sub">Bir kategoriye dokununca işlemler ona süzülür.</p>
+          <div class="ringwrap"><div class="chart" id="c-ring"></div><div class="catlist" id="catlist"></div></div>
+        </div>
+        <div class="glass">
+          <p class="eyebrow">Kişisel enflasyon</p>
+          <h2>Senin sepetinin enflasyonu</h2>
+          <p class="sub" id="infl-sub"></p>
+          <div class="infl" id="infl"></div>
+          <div class="bars" id="infl-bars"></div>
+          <p class="note" style="margin-top:12px">Her kategorinin resmî fiyat endeksi (Eurostat TÜFE, Türkiye), senin harcama payınla ağırlıklandırılır.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- forecast + model -->
+    <section class="block reveal">
+      <div class="grid g2">
+        <div class="glass">
+          <p class="eyebrow">Tahmin</p>
+          <h2 id="fc-title">Gelecek ay</h2>
+          <p class="sub" id="fc-sub"></p>
+          <div class="ranges" id="fc"></div>
+          <div class="fc-strip" id="fc-strip"></div>
+          <div class="projection" id="month-end" hidden></div>
+        </div>
+        <div class="glass" id="model">
+          <p class="eyebrow">Cihazda öğrenen model</p>
+          <h2>Tanımadığı yeri sana sorar</h2>
+          <p class="sub">Bilinen markaları kurallar, yerel dükkânları harf örüntülerinden öğrenen model sınıflandırır. Emin olmadığında sorar; her cevabınla yeniden eğitilir.</p>
+          <div class="model-stats">
+            <div class="sources" id="sources"></div>
+            <div class="srclegend" id="srclegend"></div>
           </div>
-          <p class="sub" id="monthly-sub"></p>
-          <div class="chart" id="c-monthly"></div>
+          <div class="stack" id="stack" style="margin-top:18px"></div>
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Abonelikler ve düzenli ödemeler</h2>
-        <p class="sub">Aynı yere her ay benzer tutarda yapılan ödemeler. Zam yapılanlar işaretli.</p>
-        <div class="tablewrap" id="subs"></div>
-      </div>
+    <!-- subscriptions -->
+    <section class="block reveal">
+      <div class="head"><div><p class="eyebrow">Düzenli ödemeler</p><h2>Abonelikler ve zamlar</h2></div><p class="note" id="subs-note"></p></div>
+      <div class="subs" id="subs"></div>
+    </section>
 
-      <div class="grid2">
-        <div class="card">
-          <h2>En çok harcadığın yerler</h2>
-          <div class="tablewrap" id="merchants"></div>
+    <!-- months -->
+    <section class="block reveal">
+      <div class="glass">
+        <div class="head" style="margin-bottom:6px">
+          <div><p class="eyebrow">Zaman</p><h2>Ay ay harcama</h2></div>
+          <div class="seg" role="group" aria-label="Fiyatlar">
+            <button type="button" class="on" data-real="0">Nominal</button>
+            <button type="button" data-real="1">Bugünün fiyatıyla</button>
+          </div>
         </div>
-        <div class="card">
-          <h2>Dikkat çekenler</h2>
-          <p class="sub">Kategorisinin olağan tutarının çok üstündeki harcamalar.</p>
-          <div class="tablewrap" id="unusual"></div>
-        </div>
+        <p class="sub" id="monthly-sub"></p>
+        <div class="chart" id="c-monthly"></div>
       </div>
+    </section>
 
-      <div class="card">
-        <div class="cardhead">
-          <h2>İşlemler</h2>
-          <div class="filters">
-            <input type="search" id="q" placeholder="Ara…" aria-label="İşlemlerde ara">
+    <!-- transactions -->
+    <section class="block reveal">
+      <div class="glass">
+        <div class="head" style="margin-bottom:10px">
+          <div><p class="eyebrow">Ayrıntı</p><h2>İşlemler</h2></div>
+          <div class="toolbar">
+            <label class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="search" id="q" placeholder="Ara" aria-label="İşlemlerde ara"><span class="kbd">⌘K</span></label>
             <select id="cat-filter" aria-label="Kategori"></select>
           </div>
         </div>
-        <p class="sub">Yanlış kategoriyi düzelt: aynı yerdeki tüm işlemler güncellenir ve bu tarayıcıda hatırlanır.</p>
-        <div class="tablewrap tx" id="txs"></div>
+        <div class="txwrap" id="txs"></div>
       </div>
+    </section>
 
-      <div class="card cta">
-        <div>
-          <h2>Ev almaya gücün yeter mi?</h2>
-          <p class="sub" id="cta-sub"></p>
+    <section class="block reveal">
+      <div class="glass cta">
+        <div><p class="eyebrow">Sıradaki soru</p><h2>Ev almaya gücün yeter mi?</h2><p class="sub" id="cta-sub" style="margin:0"></p></div>
+        <a class="btn" href="#kirala-al">Kirala · Al simülatörü
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
+      </div>
+    </section>
+  </div>
+</section>
+
+<!-- ===================================================================== rent or buy -->
+<section id="kirala-al" class="tab" role="tabpanel" hidden>
+  <div class="hero" style="grid-template-columns:1fr;padding-bottom:0">
+    <div>
+      <p class="eyebrow">Monte Carlo · Türkiye 2010–bugün</p>
+      <h1>Kirala mı,<br><span class="grad">satın al mı?</span></h1>
+      <p class="lede" style="max-width:62ch">Aynı bütçeyle iki hane: biri krediyle ev alır, diğeri kirada kalıp aradaki farkı yatırır. Türkiye'nin kendi enflasyon, kira, konut, kur ve faiz geçmişinden binlerce gelecek üretilir.</p>
+    </div>
+  </div>
+
+  <div class="sim">
+    <form class="glass panel" id="sim-form" autocomplete="off">
+      <div class="group">
+        <h3>Ev ve kredi</h3>
+        <label class="ctl">Ev fiyatı<div class="money"><input name="price" inputmode="numeric" value="6.000.000"><span>TL</span></div></label>
+        <label class="ctl"><span class="row">Peşinat <output data-for="downPct"></output></span><input name="downPct" type="range" min="0.1" max="1" step="0.05" value="0.4"></label>
+        <label class="ctl"><span class="row">Aylık kredi faizi <output data-for="mortgageRate"></output></span><input name="mortgageRate" type="range" min="0.5" max="5" step="0.05" value="2.5"></label>
+        <label class="ctl">Vade<select name="termMonths"><option value="60">5 yıl</option><option value="84">7 yıl</option><option value="120" selected>10 yıl</option><option value="180">15 yıl</option></select></label>
+        <label class="ctl"><span class="row">Alım masrafları <output data-for="buyCostPct"></output></span><input name="buyCostPct" type="range" min="0" max="0.08" step="0.005" value="0.045"></label>
+      </div>
+      <div class="group">
+        <h3>Kira</h3>
+        <label class="ctl">Aynı evin aylık kirası<div class="money"><input name="rent" inputmode="numeric" value="30.000"><span>TL</span></div></label>
+      </div>
+      <div class="group">
+        <h3>Gelecek</h3>
+        <label class="ctl"><span class="row">Süre <output data-for="years"></output></span><input name="years" type="range" min="3" max="15" step="1" value="10"></label>
+        <label class="ctl">Kiracı farkı nerede değerlendirir?
+          <select name="invest"><option value="deposit">TL mevduat (stopaj sonrası)</option><option value="usd">Dolar</option><option value="mix">Yarı yarıya</option></select></label>
+        <label class="ctl">Gelecek nasıl üretilsin?
+          <select name="source"><option value="history">2010'dan bu yana tüm geçmiş</option><option value="recent">Son 5 yıl</option><option value="custom">Kendi varsayımlarım</option></select></label>
+        <div class="custom" id="custom" hidden>
+          <label class="ctl">Yıllık enflasyon (%)<input name="c_inflation" inputmode="decimal" value="25"></label>
+          <label class="ctl">Konutun reel yıllık değişimi (%)<input name="c_houseReal" inputmode="decimal" value="0"></label>
+          <label class="ctl">Kiranın reel yıllık değişimi (%)<input name="c_rentReal" inputmode="decimal" value="2"></label>
+          <label class="ctl">Mevduatın reel faizi, vergi öncesi (%)<input name="c_depositReal" inputmode="decimal" value="3"></label>
+          <label class="ctl">Doların reel yıllık değişimi (%)<input name="c_usdReal" inputmode="decimal" value="0"></label>
         </div>
-        <a class="btn" href="#kirala-al" id="to-sim">Kirala mı, al mı? simülatörüne geç →</a>
+        <label class="ctl"><span class="row">Stres testi: konut fiyatı <output data-for="houseAdj"></output></span><input name="houseAdj" type="range" min="-0.15" max="0.1" step="0.01" value="0"></label>
+      </div>
+      <details class="more group">
+        <summary>Diğer masraflar</summary>
+        <div style="display:grid;gap:12px">
+          <label class="ctl">Bakım, yıllık (evin değerinin %'si)<input name="upkeepPct" inputmode="decimal" value="0,5"></label>
+          <label class="ctl">Emlak vergisi + DASK + konut sigortası, yıllık (%)<input name="taxInsPct" inputmode="decimal" value="0,15"></label>
+          <label class="ctl">Satış masrafı (%)<input name="sellCostPct" inputmode="decimal" value="4"></label>
+          <label class="ctl">Mevduat stopajı (%)<input name="withholding" inputmode="decimal" value="15"></label>
+        </div>
+      </details>
+    </form>
+
+    <div class="out">
+      <div class="glass verdict" id="verdict"></div>
+      <div class="glass">
+        <div class="head" style="margin-bottom:4px"><div><h3>Net servet, bugünün parasıyla</h3><p class="note" style="margin:0">Medyan ve %80 aralık · ev alanın serveti: evin satış değeri − kalan kredi + yatırdıkları</p></div>
+          <div class="legend"><span><i style="background:var(--buy)"></i>Ev alan</span><span><i style="background:var(--rent)"></i>Kirada kalan</span></div></div>
+        <div class="chart" id="c-wealth"></div>
+      </div>
+      <div class="grid g2">
+        <div class="glass"><h3>Sonuçların dağılımı</h3><p class="note" id="hist-sub"></p><div class="chart" id="c-hist"></div></div>
+        <div class="glass"><h3>İlk ay</h3><div id="cash"></div></div>
+      </div>
+      <div class="glass"><h3>Sonucu en çok ne değiştirir?</h3><p class="note">Her varsayım tek başına oynatıldığında medyan fark</p><div id="c-tornado" style="margin-top:12px"></div></div>
+      <div class="glass fine">
+        <p><b style="color:var(--ink)">Nasıl okunmalı?</b> Geçmiş geleceğin garantisi değildir. 2010–2026 Türkiye'sinde TL mevduatın enflasyon ve stopaj sonrası getirisi çoğu yıl negatifti, konut ise enflasyonu yendi; geçmişten üretilen gelecekler bu yüzden ev almaya yatkındır. "Kendi varsayımlarım" ve stres testiyle başka bir dünyayı dene. Vergi, kredi bulunabilirliği ve kişisel durum hesapta yok. Yatırım tavsiyesi değildir.</p>
+        <p id="data-src"></p>
       </div>
     </div>
-  </section>
-
-  <!-- ======================================================= rent or buy -->
-  <section id="kirala-al" class="tab" role="tabpanel" hidden>
-    <h1>Kirada mı kalmalı, ev mi almalı?</h1>
-    <p class="lede">Aynı aylık bütçeyle iki hane: biri krediyle ev alır, diğeri kirada kalıp peşinatı ve aradaki farkı yatırır. Türkiye'nin 2010'dan bu yana enflasyon, konut fiyatı, kira, kur ve faiz geçmişinden binlerce gelecek üretilir; hangisinin sonunda daha zengin olduğuna bakılır.</p>
-
-    <div class="simgrid">
-      <form class="card form" id="sim-form" autocomplete="off">
-        <fieldset>
-          <legend>Ev ve kredi</legend>
-          <label>Ev fiyatı (TL)<input name="price" inputmode="numeric" value="6.000.000"></label>
-          <label>Peşinat <output data-for="downPct"></output><input name="downPct" type="range" min="0.1" max="1" step="0.05" value="0.4"></label>
-          <label>Aylık kredi faizi (%)<input name="mortgageRate" inputmode="decimal" value="2,50"></label>
-          <label>Vade (ay)<select name="termMonths"><option>60</option><option>84</option><option selected>120</option><option>180</option></select></label>
-          <label>Alım masrafları (tapu harcı, kredi masrafları) <output data-for="buyCostPct"></output><input name="buyCostPct" type="range" min="0" max="0.08" step="0.005" value="0.045"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Kira</legend>
-          <label>Aynı evin aylık kirası (TL)<input name="rent" inputmode="numeric" value="30.000"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Yatırım ve gelecek</legend>
-          <label>Süre <output data-for="years"></output><input name="years" type="range" min="3" max="15" step="1" value="10"></label>
-          <label>Kiracı farkı nerede değerlendirir?
-            <select name="invest"><option value="deposit">TL mevduat (stopaj sonrası)</option><option value="usd">Dolar</option><option value="mix">Yarı yarıya</option></select>
-          </label>
-          <label>Gelecek nasıl üretilsin?
-            <select name="source">
-              <option value="history">2010'dan bu yana tüm geçmiş</option>
-              <option value="recent">Son 5 yıl</option>
-              <option value="custom">Kendi varsayımlarım</option>
-            </select>
-          </label>
-          <div class="custom" id="custom" hidden>
-            <label>Yıllık enflasyon (%)<input name="c_inflation" inputmode="decimal" value="25"></label>
-            <label>Konutun reel yıllık değişimi (%)<input name="c_houseReal" inputmode="decimal" value="0"></label>
-            <label>Kiranın reel yıllık değişimi (%)<input name="c_rentReal" inputmode="decimal" value="2"></label>
-            <label>Mevduatın reel faizi, vergi öncesi (%)<input name="c_depositReal" inputmode="decimal" value="3"></label>
-            <label>Doların reel yıllık değişimi (%)<input name="c_usdReal" inputmode="decimal" value="0"></label>
-          </div>
-          <label>Stres testi: konut fiyatı artışı <output data-for="houseAdj"></output><input name="houseAdj" type="range" min="-0.15" max="0.1" step="0.01" value="0"></label>
-        </fieldset>
-        <details>
-          <summary>Diğer masraflar</summary>
-          <label>Bakım, yıllık (evin değerinin %) <input name="upkeepPct" inputmode="decimal" value="0,5"></label>
-          <label>Emlak vergisi + DASK + konut sigortası, yıllık (%) <input name="taxInsPct" inputmode="decimal" value="0,15"></label>
-          <label>Satış masrafı (%) <input name="sellCostPct" inputmode="decimal" value="4"></label>
-          <label>Mevduat stopajı (%) <input name="withholding" inputmode="decimal" value="15"></label>
-        </details>
-      </form>
-
-      <div class="simout">
-        <div class="verdict card" id="verdict"></div>
-        <div class="card">
-          <h2>Net servet, bugünün parasıyla</h2>
-          <p class="sub">Medyan ve %80 aralık. Ev alanın serveti: evin satış değeri − kalan kredi + yatırdıkları.</p>
-          <div class="legend"><span><i style="background:var(--buy)"></i>Ev alan</span><span><i style="background:var(--rent)"></i>Kirada kalan</span></div>
-          <div class="chart" id="c-wealth"></div>
-        </div>
-        <div class="grid2">
-          <div class="card">
-            <h2>Sonuçların dağılımı</h2>
-            <p class="sub" id="hist-sub"></p>
-            <div class="chart" id="c-hist"></div>
-          </div>
-          <div class="card">
-            <h2>İlk ay nakit akışı</h2>
-            <div id="cash"></div>
-          </div>
-        </div>
-        <div class="card">
-          <h2>Sonucu en çok ne değiştirir?</h2>
-          <p class="sub">Her varsayım tek tek oynatıldığında medyan farkın aralığı.</p>
-          <div id="c-tornado"></div>
-        </div>
-        <div class="card note">
-          <p><b>Nasıl okunmalı?</b> Geçmiş, geleceğin garantisi değildir. 2010–2026 Türkiye'sinde mevduatın enflasyon ve stopaj sonrası getirisi çoğu yıl negatifti, konut ise enflasyonu yendi; geçmişten üretilen gelecekler bu yüzden ev almaya yatkındır. "Kendi varsayımlarım" ve stres testiyle farklı bir dünyayı dene. Vergi, kredi kullanılabilirliği ve kişisel durum burada yok. Yatırım tavsiyesi değildir.</p>
-          <p class="src" id="data-src"></p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <footer>Kumbara · açık kaynak · <a href="https://github.com/emrtunali/kumbara">kaynak kodu</a> · veriler: FRED (Eurostat, BIS, OECD)</footer>
+  </div>
+</section>
 </main>
+
+<footer><span>Kumbara · açık kaynak, MIT</span><span><a href="https://github.com/emrtunali/kumbara">Kaynak kodu</a> · veri: Eurostat, BIS, OECD (FRED)</span></footer>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

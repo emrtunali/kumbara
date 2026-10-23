@@ -67,7 +67,40 @@ def monthly_from_quarterly(q: dict[str, float]) -> dict[str, float]:
     return out
 
 
+# HICP by spending category (COICOP), for the personal inflation rate
+HICP = {
+    "all": "CP0000TRM086NEST",
+    "food": "CP0100TRM086NEST",  # food and non-alcoholic drinks
+    "clothing": "CP0300TRM086NEST",
+    "rent": "CP0410TRM086NEST",
+    "electricity": "CP0451TRM086NEST",
+    "furnishings": "CP0500TRM086NEST",
+    "health": "CP0600TRM086NEST",
+    "transport": "CP0700TRM086NEST",
+    "fuel": "CP0722TRM086NEST",
+    "communication": "CP0800TRM086NEST",
+    "recreation": "CP0900TRM086NEST",
+    "education": "CP1000TRM086NEST",
+    "restaurants": "CP1100TRM086NEST",  # restaurants and hotels
+}
+HICP_OUT = OUT.parent / "hicp.json"
+
+
+def hicp() -> None:
+    data = {k: fetch(v) for k, v in HICP.items()}
+    common = sorted(set.intersection(*(set(v) for v in data.values())))
+    common = [m for m in common if m >= "2018-01"]
+    HICP_OUT.write_text(json.dumps({
+        "source": {k: f"FRED {v} (Eurostat HICP)" for k, v in HICP.items()},
+        "fetched": date.today().isoformat(),
+        "months": common,
+        "index": {k: [round(data[k][m], 4) for m in common] for k in HICP},
+    }))  # fmt: skip
+    print(f"hicp: {len(common)} months {common[0]}..{common[-1]}")
+
+
 def main() -> None:
+    hicp()
     data = {k: fetch(v) for k, v in SERIES.items()}
     data["house"] = monthly_from_quarterly(data["house"])
     common = sorted(set.intersection(*(set(v) for v in data.values())))

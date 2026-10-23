@@ -57,6 +57,12 @@ for (let i = 0; i < days; i++) {
   if (rand() < 0.03) add(d, pick(["ECZANE MERKEZ KADIKOY", "ACIBADEM HASTANESI"]), between(150, 2400) * infl(k));
   if (rand() < 0.02) add(d, pick(["BILETIX", "CINEMAXIMUM CAPITOL", "STEAM PURCHASE"]), between(200, 1500) * infl(k));
   if (rand() < 0.015) add(d, "ATM PARA CEKME ZIRAAT", 2000);
+  // small local businesses the brand rules do not know: the learning model's job
+  if (rand() < 0.07) add(d, pick(["KOFTECI YUSUF BAKIRKOY", "CIGKOFTECI OMER HAN", "BALIKCI ALI USTA", "PIDECI ERCAN MODA"]), between(220, 780) * infl(k));
+  if (rand() < 0.05) add(d, pick(["MANAV DOGAL GIDA", "SARKUTERI TARIHI", "KURUYEMISCI KOCABEY"]), between(140, 650) * infl(k));
+  if (rand() < 0.025) add(d, pick(["ECZ DENIZ", "DISCI HEKIM CAN"]), between(180, 2600) * infl(k));
+  if (rand() < 0.02) add(d, "KUAFOR SALON ELIF", between(450, 1200) * infl(k));
+  if (rand() < 0.015) add(d, "YILDIZ PETROL LTD", between(1400, 2400) * infl(k));
 }
 // one-offs
 add(Date.UTC(2026, 1, 14), "TEKNOSA ATASEHIR MAGAZA", 38499);

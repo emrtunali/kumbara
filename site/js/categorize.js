@@ -20,6 +20,7 @@ export const CATEGORIES = [
   { id: "housing", name: "Kira ve konut", rules: ["kira", "aidat", "site yonetim", "yonetim gideri", "emlak vergisi", "dask"] },
   { id: "health", name: "Sağlık", rules: ["eczane", "hastane", "acibadem", "memorial", "medical park", "florence", "liv hospital", "dis hekimi", "klinik", "optik", "laboratuvar", "saglik"] },
   { id: "shopping", name: "Alışveriş", rules: ["trendyol", "hepsiburada", "amazon", "n11", "ciceksepeti", "pazarama", "zara", "lc waikiki", "lcw", "defacto", "koton", "mavi", "boyner", "h&m", "hm ", "flo ", "decathlon", "teknosa", "mediamarkt", "vatan bilgisayar", "apple store", "ikea", "koctas", "bauhaus", "english home", "madame coco", "watsons", "gratis", "rossmann", "sephora", "ebebek", "idefix", "d&r", "dr kitap"] },
+  { id: "care", name: "Kişisel bakım", rules: ["kuafor", "berber", "guzellik salonu", "guzellik merkezi", "spa ", "masaj", "manikur", "epilasyon", "barber"] },
   { id: "fun", name: "Eğlence", rules: ["biletix", "passo", "biletinial", "sinema", "cinemaximum", "paribu cineplex", "steam", "epic games", "playstation", "nintendo", "konser", "tiyatro", "muze", "spor salonu", "macfit", "gym"] },
   { id: "edu", name: "Eğitim", rules: ["universite", "okul", "kurs", "dershane", "udemy", "coursera", "kirtasiye", "egitim"] },
   { id: "travel", name: "Seyahat ve konaklama", rules: ["otel", "hotel", "booking", "airbnb", "jolly", "etstur", "tatilbudur", "tatil"] },
@@ -51,17 +52,21 @@ const NOISE = new Set(["tr", "tur", "turkey", "turkiye", "istanbul", "ist", "ank
   "se", "us", "ie", "nl", "gb", "lu", "de", "fr", "stockholm", "dublin", "amsterdam", "luxembourg", "london", "cork",
   "bill", "help", "order", "trip", "purchase", "payment", "inc", "llc", "ltd", "bv", "ab", "co"]);
 
-/** Category id for one description, honouring the user's corrections first. */
-export function categorize(desc, amount, overrides = {}) {
-  const key = merchantKey(desc);
-  if (overrides[key]) return overrides[key];
+/** The category a brand rule gives, or null when no rule matches. */
+export function ruleMatch(desc, amount) {
   const text = norm(desc);
   for (const c of COMPILED) {
     if (c.id === "income" && amount > 0) continue; // salary words only on money in
     if (c.rules.some((r) => text.includes(" " + r + " ") || (r.length >= 5 && text.includes(r)))) return c.id;
   }
-  if (amount < 0) return "income";
-  return OTHER.id;
+  return null;
+}
+
+/** Category id for one description from rules alone, honouring the user's corrections first. */
+export function categorize(desc, amount, overrides = {}) {
+  const key = merchantKey(desc);
+  if (overrides[key]) return overrides[key];
+  return ruleMatch(desc, amount) ?? (amount < 0 ? "income" : OTHER.id);
 }
 
 /** Add `cat` and `merchant` to each transaction (returns new objects). */
