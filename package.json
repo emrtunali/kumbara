@@ -1,0 +1,14 @@
+{
+  "name": "kumbara",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Banka ekstresi analizi ve kirala mı, satın al mı simülatörü; tamamen tarayıcıda çalışır.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "demo": "node scripts/make_demo.mjs",
+    "data": "python3 scripts/fetch_macro.py",
+    "serve": "python3 -m http.server 8792 --directory site"
+  }
+}
